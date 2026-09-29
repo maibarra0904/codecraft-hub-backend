@@ -3,19 +3,18 @@ const assert = require('node:assert/strict');
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
-const { app } = require('../server');
+const { app } = require('../app');
 
-const TEST_PORT = 5099;
+const TEST_PORT = 5098;
 const BASE_URL = `http://localhost:${TEST_PORT}`;
-const DATA_FILE = path.join(__dirname, '..', 'data', 'courses.json');
+const DATA_FILE = path.join(__dirname, '..', 'courses.json');
 
 let serverInstance;
 let initialDataBackup;
 
-// Helper to make HTTP requests
-function request(method, path, body = null, headers = {}) {
+function request(method, reqPath, body = null, headers = {}) {
   return new Promise((resolve, reject) => {
-    const url = new URL(path, BASE_URL);
+    const url = new URL(reqPath, BASE_URL);
     const reqOptions = {
       method,
       hostname: url.hostname,
@@ -59,12 +58,10 @@ function request(method, path, body = null, headers = {}) {
 }
 
 before(async () => {
-  // Backup courses.json before tests
   if (fs.existsSync(DATA_FILE)) {
     initialDataBackup = fs.readFileSync(DATA_FILE, 'utf8');
   }
 
-  // Start server on test port
   await new Promise((resolve) => {
     serverInstance = app.listen(TEST_PORT, () => {
       resolve();
@@ -73,12 +70,10 @@ before(async () => {
 });
 
 after(async () => {
-  // Restore initial data
   if (initialDataBackup) {
     fs.writeFileSync(DATA_FILE, initialDataBackup, 'utf8');
   }
 
-  // Close server
   await new Promise((resolve) => {
     serverInstance.close(() => {
       resolve();
@@ -86,170 +81,113 @@ after(async () => {
   });
 });
 
-test('GET / - should return API welcome info and CORS headers', async () => {
+test('GET / - should return API status and CORS headers', async () => {
   const res = await request('GET', '/');
   assert.equal(res.status, 200);
   assert.equal(res.body.status, 'Online');
   assert.equal(res.headers['access-control-allow-origin'], '*');
 });
 
-test('GET /api/courses - should return list of courses with success and count', async () => {
+test('GET /api/courses - should retrieve all courses with count', async () => {
   const res = await request('GET', '/api/courses');
   assert.equal(res.status, 200);
   assert.equal(res.body.success, true);
-  assert.ok(Array.isArray(res.body.data));
-  assert.equal(res.body.count, res.body.data.length);
-  assert.ok(res.body.data.length > 0);
+  assert.ok(Array.isArray(res.body.courses));
+  assert.equal(res.body.count, res.body.courses.length);
+  assert.ok(res.body.courses.length > 0);
 });
 
-test('GET /api/courses with search query - should filter matching courses', async () => {
-  const res = await request('GET', '/api/courses?search=React');
-  assert.equal(res.status, 200);
-  assert.equal(res.body.success, true);
-  assert.ok(res.body.data.some((c) => c.title.includes('React')));
-});
+let createdId = null;
 
-test('GET /api/courses with category filter - should return only that category', async () => {
-  const res = await request('GET', '/api/courses?category=Cloud%20Computing');
-  assert.equal(res.status, 200);
-  assert.equal(res.body.success, true);
-  assert.ok(res.body.data.every((c) => c.category === 'Cloud Computing'));
-});
-
-test('GET /api/courses with status filter - should filter by status enum', async () => {
-  const res = await request('GET', '/api/courses?status=Draft');
-  assert.equal(res.status, 200);
-  assert.equal(res.body.success, true);
-  assert.ok(res.body.data.every((c) => c.status === 'Draft'));
-});
-
-let createdCourseId = null;
-
-test('POST /api/courses - should create a course when input is valid', async () => {
+test('POST /api/courses - should add a course with required fields', async () => {
   const newCourse = {
-    title: 'Automated Testing with Node.js and Jest',
-    description: 'Learn unit, integration, and end-to-end API testing patterns with modern JavaScript.',
-    instructor: 'Jane Doe',
-    duration: '4 weeks',
-    category: 'Testing & DevOps',
-    level: 'Intermediate',
-    status: 'published', // Testing case normalization
-    price: 39.99,
+    name: 'Python Basics',
+    description: 'Learn Python fundamentals and syntax',
+    target_date: '2026-12-31',
+    status: 'Not Started',
   };
 
   const res = await request('POST', '/api/courses', newCourse);
   assert.equal(res.status, 201);
   assert.equal(res.body.success, true);
-  assert.ok(res.body.data.id);
-  assert.equal(res.body.data.title, newCourse.title);
-  assert.equal(res.body.data.status, 'Published'); // Normalized to title case
-  assert.ok(res.body.data.createdAt);
-  assert.ok(res.body.data.updatedAt);
+  assert.equal(res.body.message, 'Course added successfully');
+  assert.ok(res.body.course.id);
+  assert.equal(res.body.course.name, newCourse.name);
+  assert.equal(res.body.course.status, 'Not Started');
+  assert.ok(res.body.course.created_at);
 
-  createdCourseId = res.body.data.id;
+  createdId = res.body.course.id;
 });
 
-test('POST /api/courses - should reject with 400 when missing required fields (quality gates)', async () => {
-  const invalidCourse = {
-    title: 'Hi', // Too short
-    description: 'Short', // Too short
-  };
-
-  const res = await request('POST', '/api/courses', invalidCourse);
+test('POST /api/courses - should reject if required fields are missing', async () => {
+  const res = await request('POST', '/api/courses', { name: 'Only Name' });
   assert.equal(res.status, 400);
   assert.equal(res.body.success, false);
-  assert.equal(res.body.error, 'Validation Error');
-  assert.ok(Array.isArray(res.body.details));
-  assert.ok(res.body.details.length >= 2);
+  assert.ok(res.body.error.includes('Missing required fields'));
 });
 
-test('POST /api/courses - should reject with 400 when status enum is invalid (quality gates)', async () => {
-  const invalidStatusCourse = {
-    title: 'Valid Title Here',
-    description: 'Valid description that has sufficient length.',
-    instructor: 'John Doe',
-    duration: '4 weeks',
-    category: 'Development',
-    status: 'InReview', // Not in ['Draft', 'Published', 'Archived']
-  };
-
-  const res = await request('POST', '/api/courses', invalidStatusCourse);
+test('POST /api/courses - should reject invalid status values', async () => {
+  const res = await request('POST', '/api/courses', {
+    name: 'Invalid Status Course',
+    description: 'Testing validation error for status',
+    target_date: '2026-10-10',
+    status: 'UnknownStatus',
+  });
   assert.equal(res.status, 400);
   assert.equal(res.body.success, false);
-  assert.ok(res.body.details.some((d) => d.includes('Allowed values are: Draft, Published, Archived')));
+  assert.ok(res.body.error.includes('Status must be one of'));
 });
 
-test('GET /api/courses/:id - should retrieve a specific course by ID', async () => {
-  assert.ok(createdCourseId, 'createdCourseId should exist');
-  const res = await request('GET', `/api/courses/${createdCourseId}`);
+test('GET /api/courses/:id - should get specific course by ID', async () => {
+  assert.ok(createdId, 'createdId should exist');
+  const res = await request('GET', `/api/courses/${createdId}`);
   assert.equal(res.status, 200);
   assert.equal(res.body.success, true);
-  assert.equal(res.body.data.id, createdCourseId);
+  assert.equal(res.body.course.id, createdId);
 });
 
-test('GET /api/courses/:id - should return 404 for non-existent course ID', async () => {
-  const res = await request('GET', '/api/courses/non-existent-uuid-1234');
+test('GET /api/courses/:id - should return 404 for nonexistent course', async () => {
+  const res = await request('GET', '/api/courses/999999');
   assert.equal(res.status, 404);
   assert.equal(res.body.success, false);
-  assert.equal(res.body.error, 'Not Found');
 });
 
-test('PUT /api/courses/:id - should update course fields and timestamp', async () => {
-  assert.ok(createdCourseId, 'createdCourseId should exist');
-  const updatePayload = {
-    title: 'Advanced Testing with Node.js and Playwright',
-    status: 'Archived',
-    price: 49.99,
-  };
-
-  const res = await request('PUT', `/api/courses/${createdCourseId}`, updatePayload);
+test('PUT /api/courses/:id - should update a course', async () => {
+  assert.ok(createdId, 'createdId should exist');
+  const res = await request('PUT', `/api/courses/${createdId}`, {
+    status: 'In Progress',
+  });
   assert.equal(res.status, 200);
   assert.equal(res.body.success, true);
-  assert.equal(res.body.data.title, updatePayload.title);
-  assert.equal(res.body.data.status, 'Archived');
-  assert.equal(res.body.data.price, 49.99);
+  assert.equal(res.body.course.status, 'In Progress');
 });
 
-test('PUT /api/courses/:id - should return 404 when updating non-existent course', async () => {
-  const res = await request('PUT', '/api/courses/non-existent-uuid-1234', { title: 'New Valid Title' });
-  assert.equal(res.status, 404);
-  assert.equal(res.body.success, false);
+test('GET /api/courses/stats - should return statistics by status', async () => {
+  const res = await request('GET', '/api/courses/stats');
+  assert.equal(res.status, 200);
+  assert.equal(res.body.success, true);
+  assert.ok(typeof res.body.data.total === 'number');
+  assert.ok(res.body.data.by_status);
+  assert.ok('Not Started' in res.body.data.by_status);
+  assert.ok('In Progress' in res.body.data.by_status);
+  assert.ok('Completed' in res.body.data.by_status);
+});
+
+test('GET /api/courses/search?q=Python - should find matching courses', async () => {
+  const res = await request('GET', '/api/courses/search?q=Python');
+  assert.equal(res.status, 200);
+  assert.equal(res.body.success, true);
+  assert.ok(res.body.courses.length > 0);
+  assert.ok(res.body.courses.some(c => c.name.includes('Python')));
 });
 
 test('DELETE /api/courses/:id - should delete the course', async () => {
-  assert.ok(createdCourseId, 'createdCourseId should exist');
-  const res = await request('DELETE', `/api/courses/${createdCourseId}`);
+  assert.ok(createdId, 'createdId should exist');
+  const res = await request('DELETE', `/api/courses/${createdId}`);
   assert.equal(res.status, 200);
   assert.equal(res.body.success, true);
-  assert.equal(res.body.data.id, createdCourseId);
+  assert.equal(res.body.message, 'Course deleted successfully');
 
-  // Verify it is gone
-  const getRes = await request('GET', `/api/courses/${createdCourseId}`);
-  assert.equal(getRes.status, 404);
-});
-
-test('DELETE /api/courses/:id - should return 404 when deleting non-existent course', async () => {
-  const res = await request('DELETE', '/api/courses/non-existent-uuid-1234');
-  assert.equal(res.status, 404);
-  assert.equal(res.body.success, false);
-});
-
-test('GET /api/stats - should return metrics aggregates', async () => {
-  const res = await request('GET', '/api/stats');
-  assert.equal(res.status, 200);
-  assert.equal(res.body.success, true);
-  assert.ok(typeof res.body.data.totalCourses === 'number');
-  assert.ok(typeof res.body.data.totalInstructors === 'number');
-  assert.ok(res.body.data.byStatus);
-  assert.ok('Published' in res.body.data.byStatus);
-  assert.ok('Draft' in res.body.data.byStatus);
-  assert.ok('Archived' in res.body.data.byStatus);
-  assert.ok(res.body.data.byCategory);
-});
-
-test('GET /api/health - should report health UP status', async () => {
-  const res = await request('GET', '/api/health');
-  assert.equal(res.status, 200);
-  assert.equal(res.body.status, 'UP');
-  assert.equal(res.body.service, 'CodeCraftHub API');
+  const checkRes = await request('GET', `/api/courses/${createdId}`);
+  assert.equal(checkRes.status, 404);
 });

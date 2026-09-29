@@ -1,23 +1,22 @@
 {
-  "name": "codecraft-hub-backend",
+  "name": "codecrafthub",
   "version": "1.0.0",
-  "description": "CodeCraftHub Personalized Learning Platform REST API with full CRUD and JSON file storage",
-  "main": "server.js",
+  "description": "Personal learning goal tracker API",
+  "main": "app.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
+    "start": "node app.js",
+    "dev": "node --watch app.js",
     "test": "node --test tests/api.test.js"
   },
   "keywords": [
+    "learning",
+    "api",
+    "rest",
     "express",
-    "crud",
-    "courses",
-    "rest-api",
-    "json-storage",
-    "codecraft-hub"
+    "courses"
   ],
   "author": "CodeCraftHub Team",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.21.2"
