@@ -1,0 +1,67 @@
+[
+  {
+    "id": "c1a2b3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d",
+    "title": "Full-Stack Web Development with React JS and Node.js",
+    "description": "Master modern full-stack web engineering from frontend architecture with React to robust RESTful microservices with Node.js and Express.",
+    "instructor": "Dr. Sarah Jenkins",
+    "duration": "10 weeks",
+    "category": "Web Development",
+    "level": "Intermediate",
+    "status": "Published",
+    "price": 89.99,
+    "createdAt": "2026-08-15T10:00:00.000Z",
+    "updatedAt": "2026-08-15T10:00:00.000Z"
+  },
+  {
+    "id": "d2b3c4e5-f6a7-4b2c-9d3e-4f5a6b7c8d9e",
+    "title": "Generative AI and Large Language Models for Engineers",
+    "description": "Learn prompt engineering, RAG pipelines, fine-tuning, and AI-augmented software development workflows using modern GenAI tools.",
+    "instructor": "Alex Rivera",
+    "duration": "6 weeks",
+    "category": "AI & Machine Learning",
+    "level": "Advanced",
+    "status": "Published",
+    "price": 99.99,
+    "createdAt": "2026-08-20T14:30:00.000Z",
+    "updatedAt": "2026-08-20T14:30:00.000Z"
+  },
+  {
+    "id": "e3c4d5f6-a7b8-4c3d-ae4f-5a6b7c8d9e0f",
+    "title": "Cloud-Native Architecture with Docker & Kubernetes",
+    "description": "Design, containerize, and orchestrate scalable cloud applications with CI/CD pipelines, service meshes, and production monitoring.",
+    "instructor": "Elena Rostova",
+    "duration": "8 weeks",
+    "category": "Cloud Computing",
+    "level": "Intermediate",
+    "status": "Published",
+    "price": 79.99,
+    "createdAt": "2026-09-01T09:15:00.000Z",
+    "updatedAt": "2026-09-01T09:15:00.000Z"
+  },
+  {
+    "id": "f4d5e6a7-b8c9-4d4e-bf5a-6b7c8d9e0f1a",
+    "title": "Python for Data Analysis and Predictive Modeling",
+    "description": "Hands-on data wrangling, exploratory data analysis, visualization, and statistical modeling with NumPy, Pandas, and Scikit-Learn.",
+    "instructor": "Marcus Chen",
+    "duration": "7 weeks",
+    "category": "Data Science",
+    "level": "Beginner",
+    "status": "Draft",
+    "price": 49.99,
+    "createdAt": "2026-09-10T11:45:00.000Z",
+    "updatedAt": "2026-09-10T11:45:00.000Z"
+  },
+  {
+    "id": "a5e6f7a8-c9d0-4e5f-c06b-7c8d9e0f1a2b",
+    "title": "Cybersecurity Fundamentals and Defensive Operations",
+    "description": "Understand vulnerability assessment, network penetration defense, secure coding practices, and identity access governance.",
+    "instructor": "Priya Patel",
+    "duration": "5 weeks",
+    "category": "Cybersecurity",
+    "level": "Beginner",
+    "status": "Archived",
+    "price": 59.99,
+    "createdAt": "2026-07-05T08:00:00.000Z",
+    "updatedAt": "2026-09-15T16:20:00.000Z"
+  }
+]
